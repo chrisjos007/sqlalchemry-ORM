@@ -1,10 +1,8 @@
 import csv
 import json
-from sqlalchemy import Integer, Column, String, Float, create_engine
+from table import session, unpopulation
 from collections import defaultdict
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 
 
 def dbloader(csv_data, session):
@@ -12,7 +10,7 @@ def dbloader(csv_data, session):
 
     # traverse through the list and add rows to table
     for line in csv_data:
-        population = User(
+        population = unpopulation(
                           country=line[0],
                           code=int(line[1]),
                           year=int(line[2]),
@@ -30,7 +28,8 @@ def india_plot(session):
     india_pop = defaultdict(float)
 
     # query rows matching nation as India
-    for row in session.query(User).filter(User.country == 'India'):
+    for row in session.query(unpopulation).\
+            filter(unpopulation.country == 'India'):
         india_pop[row.year] += row.population
 
     return india_pop
@@ -44,8 +43,8 @@ def asean_plot(session, asean):
     asean_dict = defaultdict(float)
 
     # query of ASEAN nations
-    for row in session.query(User).\
-            filter(User.year == 2014, User.country.in_(asean)):
+    for row in session.query(unpopulation).\
+            filter(unpopulation.year == 2014, unpopulation.country.in_(asean)):
         asean_dict[row.country] += row.population
 
     return asean_dict
@@ -59,7 +58,8 @@ def saarc_plot(session, saarc):
     saarc_dict = defaultdict(float)
 
     # query of rows belonging to SAARC nations
-    for row in session.query(User).filter(User.country.in_(saarc)):
+    for row in session.query(unpopulation).\
+            filter(unpopulation.country.in_(saarc)):
         saarc_dict[row.year] += row.population
 
     return saarc_dict
@@ -78,9 +78,9 @@ def group_plot_asean(session, asean):
     years = [i for i in range(2004, 2015)]    # list of years
 
     # query for rows matching ASEAN nations for each year
-    for row in session.query(User).\
-        filter(User.country.in_(asean)).\
-            filter(User.year.in_(years)):
+    for row in session.query(unpopulation).\
+        filter(unpopulation.country.in_(asean)).\
+            filter(unpopulation.year.in_(years)):
         population_asean[row.country][row.year] = row.population
 
     for key, val in population_asean.items():
@@ -150,35 +150,6 @@ if __name__ == "__main__":
             line[0] = "Laos"
         if(line[0] == "Brunei Darussalam"):
             line[0] = "Brunei"
-
-    # catalog for the ORM model
-    Base = declarative_base()
-
-    # ORM table model
-    class User(Base):
-        __tablename__ = 'UN_population'
-        id = Column(Integer, primary_key=True)
-        country = Column(String)
-        code = Column(Integer)
-        year = Column(Integer)
-        population = Column(Float)
-
-        def __repr__(self):
-            return f"<Population(id={self.id},\
-                        country={self.country},\
-                        country_code={self.code},\
-                        year={self.year},\
-                        population={self.population})>"
-
-    # creates a new engine instance using postgres
-    engine = create_engine(
-        'postgres://chris:chris@localhost:5432/sqlp', echo=True)
-
-    Base.metadata.create_all(engine)
-
-    # creating session object and binding to engine
-    Session = sessionmaker(bind=engine)
-    session = Session()
 
     # loading our csv data into a relational database
     dbloader(csv_read, session)
