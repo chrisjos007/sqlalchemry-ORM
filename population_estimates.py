@@ -19,7 +19,7 @@ def dbloader(csv_data, session):
                           population=float(line[3])
                         )
         session.add(population)
-    
+
     # commit the added rows to the database
     session.commit()
 
@@ -174,7 +174,6 @@ if __name__ == "__main__":
     engine = create_engine(
         'postgres://chris:chris@localhost:5432/sqlp', echo=True)
 
-    # commiting schema
     Base.metadata.create_all(engine)
 
     # creating session object and binding to engine
