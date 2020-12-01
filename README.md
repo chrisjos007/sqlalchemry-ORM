@@ -36,7 +36,7 @@ csv file has been provided in the repo.
 
 1) Clone the repository
 2) run the creator.sql file in postgres
-3) run the python file
-4) open browser and go to [http://localhost:8000/](http://localhost:8000/)
+3) run the python file - population_estimates.py
+4) open a browser and go to [http://localhost:8000/](http://localhost:8000/)
 5) Plot specifications can be obtained in the dataproject-python README
 6) run the remover.sql file in postgres
