@@ -14,13 +14,15 @@ class unpopulation(Base):
     code = Column(Integer)
     year = Column(Integer)
     population = Column(Float)
+    group = Column(String)
 
     def __repr__(self):
         return f"<unpopulation(id={self.id},\
                     country={self.country},\
                     country_code={self.code},\
                     year={self.year},\
-                    population={self.population})>"
+                    population={self.population},\
+                    group={self.group})>"
 
 
 # creates a new engine instance using postgres

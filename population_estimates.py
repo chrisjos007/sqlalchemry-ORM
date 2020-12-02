@@ -1,71 +1,75 @@
 import csv
 import json
+from sqlalchemy import func
 from table import session, unpopulation
 from collections import defaultdict
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
-def dbloader(csv_data, session):
+def dbloader(csv_data, session, asean, saarc):
     """ creates a table based on the csv data """
 
     # traverse through the list and add rows to table
     for line in csv_data:
-        population = unpopulation(
+        g = "None"
+        if line[0] in asean:
+            g = "asean"
+        elif line[0] in saarc:
+            g = "saarc"
+        rows = unpopulation(
                           country=line[0],
                           code=int(line[1]),
                           year=int(line[2]),
-                          population=float(line[3])
+                          population=float(line[3]),
+                          group=g
                         )
-        session.add(population)
+        session.add(rows)
 
     # commit the added rows to the database
     session.commit()
 
 
 def india_plot(session):
-    """ Returns dictionary of indian population for each year """
+    """ queries table for countries matching India
 
-    india_pop = defaultdict(float)
+    Returns dictionary of indian population for each year """
 
     # query rows matching nation as India
-    for row in session.query(unpopulation).\
-            filter(unpopulation.country == 'India'):
-        india_pop[row.year] += row.population
+    india_population = session.\
+        query(unpopulation.year, func.sum(unpopulation.population)).\
+        filter(unpopulation.country == 'India').\
+        group_by(unpopulation.year).all()
+    return dict(india_population)
 
-    return india_pop
 
-
-def asean_plot(session, asean):
-    """ queries table for countries in ASEAN nations
+def asean_plot(session):
+    """ queries table for countries which are ASEAN
 
     Data considered for the year 2014 for each ASEAN nation """
 
-    asean_dict = defaultdict(float)
-
     # query of ASEAN nations
-    for row in session.query(unpopulation).\
-            filter(unpopulation.year == 2014, unpopulation.country.in_(asean)):
-        asean_dict[row.country] += row.population
+    asean_population = session.\
+        query(unpopulation.country, func.sum(unpopulation.population)).\
+        filter(unpopulation.group == 'asean', unpopulation.year == 2014).\
+        group_by(unpopulation.country).all()
+    return dict(asean_population)
 
-    return asean_dict
 
+def saarc_plot(session):
+    """ function that queries for  population of SAARC nations
 
-def saarc_plot(session, saarc):
-    """ queries filtering population of SAARC nations
-
-    returns population dictionary based on the query"""
-
-    saarc_dict = defaultdict(float)
+    returns population for each year """
 
     # query of rows belonging to SAARC nations
-    for row in session.query(unpopulation).\
-            filter(unpopulation.country.in_(saarc)):
-        saarc_dict[row.year] += row.population
+    saarc_population = session.\
+        query(unpopulation.year, func.sum(unpopulation.population)).\
+        filter(unpopulation.group == 'saarc').\
+        group_by(unpopulation.year).all()
 
-    return saarc_dict
+    return dict(saarc_population)
 
 
-def group_plot_asean(session, asean):
+def group_plot_asean(session):
     """ Returns a population dictionary for ASEAN countries
 
     keys: ASEAN countries
@@ -73,18 +77,16 @@ def group_plot_asean(session, asean):
 
     Grouped into countries over the years 2004 to 2014"""
 
-    population_asean = defaultdict(dict)
     population_list = defaultdict(list)
-    years = [i for i in range(2004, 2015)]    # list of years
 
-    # query for rows matching ASEAN nations for each year
-    for row in session.query(unpopulation).\
-        filter(unpopulation.country.in_(asean)).\
-            filter(unpopulation.year.in_(years)):
-        population_asean[row.country][row.year] = row.population
+    asean_grouped = session.\
+        query(unpopulation.country, unpopulation.population).\
+        filter(unpopulation.year >= 2004, unpopulation.year <= 2014).\
+        filter(unpopulation.group == 'asean').\
+        order_by(unpopulation.year)
 
-    for key, val in population_asean.items():
-        population_list[key] = list(val.values())
+    for country, population in asean_grouped:
+        population_list[country].append(population)
 
     return population_list
 
@@ -106,8 +108,7 @@ def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    """ Creates a mapping and binds it to session
-    Read in the csv file and create table from it.
+    """ Read in the csv file and maps it with the schema
 
     Using the table query, make function calls
 
@@ -152,12 +153,12 @@ if __name__ == "__main__":
             line[0] = "Brunei"
 
     # loading our csv data into a relational database
-    dbloader(csv_read, session)
+    dbloader(csv_read, session, asean, saarc)
 
     # function calls for each plot
     json_saver(india_plot(session), "india_plot")
-    json_saver(asean_plot(session, asean), "asean_plot")
-    json_saver(saarc_plot(session, saarc), "saarc_plot")
-    json_saver(group_plot_asean(session, asean), "asean_group_plot")
+    json_saver(asean_plot(session), "asean_plot")
+    json_saver(saarc_plot(session), "saarc_plot")
+    json_saver(group_plot_asean(session), "asean_group_plot")
 
     run()        # run localhost server
