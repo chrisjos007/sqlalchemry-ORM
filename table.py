@@ -8,6 +8,8 @@ Base = declarative_base()
 
 # ORM table model
 class Unpopulation(Base):
+    """ mapping that repreents the table for the given data"""
+
     __tablename__ = 'populations'
     id = Column(Integer, primary_key=True)
     country = Column(String)
