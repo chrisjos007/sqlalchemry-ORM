@@ -52,6 +52,7 @@ def asean_plot(session):
         query(unpopulation.country, func.sum(unpopulation.population)).\
         filter(unpopulation.group == 'asean', unpopulation.year == 2014).\
         group_by(unpopulation.country).all()
+
     return dict(asean_population)
 
 
@@ -79,12 +80,14 @@ def group_plot_asean(session):
 
     population_list = defaultdict(list)
 
+    # query for asean nations for ordered by year
     asean_grouped = session.\
         query(unpopulation.country, unpopulation.population).\
         filter(unpopulation.year >= 2004, unpopulation.year <= 2014).\
         filter(unpopulation.group == 'asean').\
         order_by(unpopulation.year)
 
+    # creates a dictionary of lists
     for country, population in asean_grouped:
         population_list[country].append(population)
 
