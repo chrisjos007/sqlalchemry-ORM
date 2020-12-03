@@ -1,8 +1,7 @@
 import csv
 import json
 from sqlalchemy import func
-from table import session, unpopulation
-from collections import defaultdict
+from table import session, Unpopulation
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
@@ -16,7 +15,7 @@ def dbloader(csv_data, session, asean, saarc):
             g = "asean"
         elif line[0] in saarc:
             g = "saarc"
-        rows = unpopulation(
+        rows = Unpopulation(
                           country=line[0],
                           code=int(line[1]),
                           year=int(line[2]),
@@ -36,9 +35,9 @@ def india_plot(session):
 
     # query rows matching nation as India
     india_population = session.\
-        query(unpopulation.year, func.sum(unpopulation.population)).\
-        filter(unpopulation.country == 'India').\
-        group_by(unpopulation.year).all()
+        query(Unpopulation.year, func.sum(Unpopulation.population)).\
+        filter(Unpopulation.country == 'India').\
+        group_by(Unpopulation.year).all()
     return dict(india_population)
 
 
@@ -49,9 +48,9 @@ def asean_plot(session):
 
     # query of ASEAN nations
     asean_population = session.\
-        query(unpopulation.country, func.sum(unpopulation.population)).\
-        filter(unpopulation.group == 'asean', unpopulation.year == 2014).\
-        group_by(unpopulation.country).all()
+        query(Unpopulation.country, func.sum(Unpopulation.population)).\
+        filter(Unpopulation.group == 'asean', Unpopulation.year == 2014).\
+        group_by(Unpopulation.country).all()
 
     return dict(asean_population)
 
@@ -63,9 +62,9 @@ def saarc_plot(session):
 
     # query of rows belonging to SAARC nations
     saarc_population = session.\
-        query(unpopulation.year, func.sum(unpopulation.population)).\
-        filter(unpopulation.group == 'saarc').\
-        group_by(unpopulation.year).all()
+        query(Unpopulation.year, func.sum(Unpopulation.population)).\
+        filter(Unpopulation.group == 'saarc').\
+        group_by(Unpopulation.year).all()
 
     return dict(saarc_population)
 
@@ -78,20 +77,14 @@ def group_plot_asean(session):
 
     Grouped into countries over the years 2004 to 2014"""
 
-    population_list = defaultdict(list)
-
     # query for asean nations for ordered by year
     asean_grouped = session.\
-        query(unpopulation.country, unpopulation.population).\
-        filter(unpopulation.year >= 2004, unpopulation.year <= 2014).\
-        filter(unpopulation.group == 'asean').\
-        order_by(unpopulation.year)
+        query(Unpopulation.country, func.array_agg(Unpopulation.population)).\
+        filter(Unpopulation.year >= 2004, Unpopulation.year <= 2014).\
+        filter(Unpopulation.group == 'asean').\
+        group_by(Unpopulation.country)
 
-    # creates a dictionary of lists
-    for country, population in asean_grouped:
-        population_list[country].append(population)
-
-    return population_list
+    return dict(asean_grouped)
 
 
 def json_saver(dict, filename):

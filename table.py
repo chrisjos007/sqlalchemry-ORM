@@ -7,8 +7,8 @@ Base = declarative_base()
 
 
 # ORM table model
-class unpopulation(Base):
-    __tablename__ = 'population'
+class Unpopulation(Base):
+    __tablename__ = 'populations'
     id = Column(Integer, primary_key=True)
     country = Column(String)
     code = Column(Integer)
@@ -17,7 +17,7 @@ class unpopulation(Base):
     group = Column(String)
 
     def __repr__(self):
-        return f"<unpopulation(id={self.id},\
+        return f"<Unpopulation(id={self.id},\
                     country={self.country},\
                     country_code={self.code},\
                     year={self.year},\
